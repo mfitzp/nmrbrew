@@ -484,8 +484,24 @@ class MainWindow(QMainWindow):
             self.window_title_metadata['data_filename'],
         ))
 
-        self.setWindowIcon(QIcon(os.path.join(utils.scriptdir, 'static', 'icon.png')))
 
+        
+def setIcons(app, path, filename):
+
+    if sys.platform == 'win32': # Windows 32/64bit
+        import ctypes
+        app_identifier = app.organizationDomain() + "." + app.applicationName()
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_identifier)
+        print(app_identifier)
+    icon = QIcon()
+    for s in [16,32,64,128]:
+        fn = os.path.join(path, filename.format(**{'d': s}))
+        print(fn)
+        if os.path.exists(fn):
+            icon.addFile(fn, QSize(s,s) )
+    app.setWindowIcon(icon)
+
+        
 
 
 def main():
@@ -510,6 +526,9 @@ def main():
     app.installTranslator(translator_mp)
 
     window = MainWindow()
+    
+    setIcons(app, os.path.join(utils.scriptdir, 'static'), 'icon_{d}x{d}.png')
+    
     logging.info('Ready.')
     app.exec_()  # Enter Qt application main loop
 
