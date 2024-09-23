@@ -797,7 +797,7 @@ class ToolListDelegate(QAbstractItemDelegate):
         painter.setRenderHint(QPainter.Antialiasing)
 
         status_r = QRectF(
-            215, option.rect.y() + (option.rect.height() / 2) - 12.5, 25, 25
+            5, option.rect.y() + (option.rect.height() / 2) - 12.5, 25, 25
         )
         if tool.current_status == "active":
             pen = QPen()
@@ -808,7 +808,7 @@ class ToolListDelegate(QAbstractItemDelegate):
 
             painter.setPen(pen)
 
-            painter.drawArc(status_r, 1440, -(5760 * tool.current_progress))
+            painter.drawArc(status_r, 1440, -int(5760 * tool.current_progress))
 
         else:
             pass
@@ -897,11 +897,11 @@ class AnnotateClasses(GenericDialog):
 
         self.layout.addWidget(gb)
 
-        self.config.add_handler(
-            "annotation/sample_classes",
-            self.lw_classes,
-            (self.map_list_fwd, self.map_list_rev),
-        )
+        # self.config.add_handler(
+        #    "annotation/sample_classes",
+        #    self.lw_classes,
+        #    (self.map_list_fwd, self.map_list_rev),
+        # )
 
         self.dialogFinalise()
 
@@ -924,12 +924,11 @@ class AnnotateClasses(GenericDialog):
             "All compatible files (*.csv *.txt *.tsv);;Comma Separated Values (*.csv);;Plain Text Files (*.txt);;Tab Separated Values (*.tsv);;All files (*.*)",
         )
         if filename:
-            c = self.config.get("annotation/sample_classes")[
-                :
-            ]  # Create new list to force refresh on reassign
+            c = self.config.get("annotation/sample_classes") or []
+            c = c[:]  # Create new list to force refresh on reassign
 
             with open(filename, "rU") as f:
-                reader = csv.reader(f, delimiter=b",", dialect="excel")
+                reader = csv.reader(f, delimiter=",", dialect="excel")
                 for row in reader:
                     if row not in c:
                         c.append(row[:2])
@@ -1054,7 +1053,7 @@ class AnnotatePeaks(GenericDialog):
             ]  # Create new list to force refresh on reassign
 
             with open(filename, "rU") as f:
-                reader = csv.reader(f, delimiter=b",", dialect="excel")
+                reader = csv.reader(f, delimiter=",", dialect="excel")
                 for row in reader:
                     if row not in c:
                         c.append(row[0], float(row[1]), float(row[2]))

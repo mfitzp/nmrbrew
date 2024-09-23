@@ -89,11 +89,13 @@ class PeakAnnotationItem(pg.UIGraphicsItem):
 
         self.textItem.resetTransform()
         if s:
-            self.textItem.scale(s, s)
+            self.textItem.setScale(s)
 
         self.textItem.setPos(0, 0)
         br = self.textItem.boundingRect()
-        apos = self.textItem.mapToParent(QPoint(br.width() * 0.5, br.height()))
+        apos = self.textItem.mapToParent(
+            QPoint(int(br.width() * 0.5), int(br.height()))
+        )
         self.textItem.setPos(-apos.x(), -apos.y())
 
         w = t.map(self.x2, self.y)[0] - t.map(self.x1, self.y)[0]
@@ -107,7 +109,7 @@ class PeakAnnotationItem(pg.UIGraphicsItem):
 
         self.lineItem.resetTransform()
         if s:
-            self.lineItem.scale(s, s)
+            self.lineItem.setScale(s)
 
         self.lineItem.setPos(-w * s / 2, br.height() * 0.5 * s)
 
