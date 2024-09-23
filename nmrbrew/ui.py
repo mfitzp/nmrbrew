@@ -1,26 +1,24 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+
 import logging
-logging.debug('Loading ui.py')
+
+logging.debug("Loading ui.py")
 
 # Import PyQt5 classes
+import csv
+import os
+
+import numpy as np
+from pyqtconfig import ConfigManager
+
+from . import utils
+from .globals import METABOHUNTER_HMDB_NAME_MAP, STATUS_QCOLORS, custom_pyqtconfig_hooks
 from .qt import *
 
-import os
-import csv
-import numpy as np
-import pandas as pd
-from collections import OrderedDict
-
-from pyqtconfig import ConfigManager
-from . import utils
-
-from .globals import settings, STATUS_QCOLORS, custom_pyqtconfig_hooks, METABOHUNTER_HMDB_NAME_MAP
-import metabohunter
-
+# import metabohunter
 # Translation (@default context)
 from .translate import tr
-
 
 try:
     unicode
@@ -28,20 +26,16 @@ except:
     unicode = str
 
 
-
 class ConfigPanel(QWidget):
-
     def __init__(self, parent, *args, **kwargs):
         super(ConfigPanel, self).__init__(parent.parent(), *args, **kwargs)
 
         self.config = parent.config
         self.tool = parent
         self.layout = QHBoxLayout()
-        self.layout.setContentsMargins(10,0,10,0)
-
+        self.layout.setContentsMargins(10, 0, 10, 0)
 
     def finalise(self):
-
         self.layout.addStretch()
         self.setLayout(self.layout)
 
@@ -59,22 +53,24 @@ class ConfigPanel(QWidget):
             pass
 
     def addBottomSpacer(self, gd):
-        gd.addItem(QSpacerItem(1, 100, QSizePolicy.Minimum, QSizePolicy.Minimum), gd.rowCount(), 0)
+        gd.addItem(
+            QSpacerItem(1, 100, QSizePolicy.Minimum, QSizePolicy.Minimum),
+            gd.rowCount(),
+            0,
+        )
 
 
 class SpectraList(QListWidget):
     pass
 
 
-
-
 class QColorButton(QPushButton):
-    '''
+    """
     Custom Qt Widget to show a chosen color.
-    
+
     Left-clicking the button shows the color-chooser, while
-    right-clicking resets the color to None (no-color).    
-    '''
+    right-clicking resets the color to None (no-color).
+    """
 
     colorChanged = pyqtSignal()
 
@@ -101,13 +97,13 @@ class QColorButton(QPushButton):
         return self._color
 
     def onColorPicker(self):
-        '''
+        """
         Show color-picker dialog to select color.
-        
+
         This should use the Qt-defined non-native dialog so custom colours
         can be auto-defined from the currently set palette - but it doesn't work due
         to a known bug - should auto-fix on Qt 5.2.2.
-        '''
+        """
         dlg = QColorDialog(self)
         if self._color:
             dlg.setCurrentColor(QColor(self._color))
@@ -126,12 +122,12 @@ class QColorButton(QPushButton):
 
 
 class QNoneDoubleSpinBox(QDoubleSpinBox):
-    '''
+    """
     Custom Qt widget to offer a DoubleSpinBox that can hold null values.
-    
+
     The value can be set to null with right-click. When set to null the widget
     appears faded.
-    '''
+    """
 
     def __init__(self, *args, **kwargs):
         super(QNoneDoubleSpinBox, self).__init__(*args, **kwargs)
@@ -154,7 +150,9 @@ class QNoneDoubleSpinBox(QDoubleSpinBox):
             super(QNoneDoubleSpinBox, self).setValue(v)
 
     def event(self, e):
-        if type(e) == QContextMenuEvent:  # int and event.button() == QtCore.Qt.RightButton:
+        if (
+            type(e) == QContextMenuEvent
+        ):  # int and event.button() == QtCore.Qt.RightButton:
             e.accept()
             if self.is_None:
                 self.setValue(super(QNoneDoubleSpinBox, self).value())
@@ -190,11 +188,16 @@ class QListWidgetAddRemove(QListWidget):
 
 
 class QFileOpenLineEdit(QWidget):
-
     textChanged = pyqtSignal(object)
-    icon = 'disk--arrow.png'
+    icon = "disk--arrow.png"
 
-    def __init__(self, parent=None, description=tr("Select file"), filename_filter=tr("All Files") + " (*.*);;", **kwargs):
+    def __init__(
+        self,
+        parent=None,
+        description=tr("Select file"),
+        filename_filter=tr("All Files") + " (*.*);;",
+        **kwargs,
+    ):
         super(QFileOpenLineEdit, self).__init__(parent, **kwargs)
 
         self._text = None
@@ -204,7 +207,7 @@ class QFileOpenLineEdit(QWidget):
 
         self.lineedit = QLineEdit()
         self.button = QToolButton()
-        self.button.setIcon(QIcon(os.path.join(utils.scriptdir, 'icons', self.icon)))
+        self.button.setIcon(QIcon(os.path.join(utils.scriptdir, "icons", self.icon)))
 
         layout = QHBoxLayout(self)
         layout.addWidget(self.lineedit)
@@ -218,8 +221,9 @@ class QFileOpenLineEdit(QWidget):
         self.lineedit.textChanged.connect(self.setText)
 
     def onSelectPath(self):
-
-        filename, _ = QFileDialog.getOpenFileName(self, self.description, '', self.filename_filter)
+        filename, _ = QFileDialog.getOpenFileName(
+            self, self.description, "", self.filename_filter
+        )
         if filename:
             self.setText(filename)
 
@@ -232,24 +236,36 @@ class QFileOpenLineEdit(QWidget):
 
 
 class QFileSaveLineEdit(QFileOpenLineEdit):
+    icon = "disk--pencil.png"
 
-    icon = 'disk--pencil.png'
-
-    def __init__(self, parent=None, description=tr("Select save filename"), filename_filter=tr("All Files") + " (*.*);;", **kwargs):
-        super(QFileSaveLineEdit, self).__init__(parent, description, filename_filter, **kwargs)
+    def __init__(
+        self,
+        parent=None,
+        description=tr("Select save filename"),
+        filename_filter=tr("All Files") + " (*.*);;",
+        **kwargs,
+    ):
+        super(QFileSaveLineEdit, self).__init__(
+            parent, description, filename_filter, **kwargs
+        )
 
     def onSelectPath(self):
-        filename, _ = QFileDialog.getSaveFileName(self.w, self.description, '', self.filename_filter)
+        filename, _ = QFileDialog.getSaveFileName(
+            self.w, self.description, "", self.filename_filter
+        )
         if filename:
             self.setText(filename)
 
 
 class QFolderLineEdit(QFileOpenLineEdit):
+    icon = "folder-horizontal-open.png"
 
-    icon = 'folder-horizontal-open.png'
-
-    def __init__(self, parent=None, description=tr("Select folder"), filename_filter="", **kwargs):
-        super(QFolderLineEdit, self).__init__(parent, description, filename_filter, **kwargs)
+    def __init__(
+        self, parent=None, description=tr("Select folder"), filename_filter="", **kwargs
+    ):
+        super(QFolderLineEdit, self).__init__(
+            parent, description, filename_filter, **kwargs
+        )
 
     def onSelectPath(self):
         Qd = QFileDialog()
@@ -263,23 +279,24 @@ class QFolderLineEdit(QFileOpenLineEdit):
 
 # GENERIC CONFIGURATION AND OPTION HANDLING
 
+
 # Generic configuration dialog handling class
 class GenericDialog(QDialog):
-    '''
+    """
     A generic dialog wrapper that handles most common dialog setup/shutdown functions.
-    
-    Support for config, etc. to be added for auto-handling widgets and config load/save. 
-    '''
 
-    def __init__(self, parent, buttons=['ok', 'cancel'], **kwargs):
+    Support for config, etc. to be added for auto-handling widgets and config load/save.
+    """
+
+    def __init__(self, parent, buttons=["ok", "cancel"], **kwargs):
         super(GenericDialog, self).__init__(parent, **kwargs)
 
         self.sizer = QVBoxLayout()
         self.layout = QVBoxLayout()
 
         QButtons = {
-            'ok': QDialogButtonBox.Ok,
-            'cancel': QDialogButtonBox.Cancel,
+            "ok": QDialogButtonBox.Ok,
+            "cancel": QDialogButtonBox.Cancel,
         }
         Qbtn = 0
         for k in buttons:
@@ -315,12 +332,12 @@ class DialogAbout(QDialog):
     def __init__(self, parent, **kwargs):
         super(DialogAbout, self).__init__(parent, **kwargs)
 
-        self.setWindowTitle('About NMRbrew')
+        self.setWindowTitle("About NMRbrew")
         self.help = QWebView(self)  # , parent.onBrowserNav)
-        with open(os.path.join(utils.basedir, 'README.md'), 'rU') as f:
+        with open(os.path.join(utils.basedir, "README.md"), "rU") as f:
             md = f.read()
 
-        html = '''<html>
+        html = """<html>
 <head><title>About</title><link rel="stylesheet" href="{css}"></head>
 <body>
 <div class="container" id="notebook-container">
@@ -332,9 +349,15 @@ class DialogAbout(QDialog):
 </div>
 </div>
         </body>
-        </html>'''.format(**{'baseurl': 'file:///' + os.path.join(utils.scriptdir), 'css': 'file:///' + css, 'html': markdown2html_mistune(md)})
+        </html>""".format(
+            **{
+                "baseurl": "file:///" + os.path.join(utils.scriptdir),
+                "css": "file:///" + css,
+                "html": markdown2html_mistune(md),
+            }
+        )
 
-        self.help.setHtml(html, QUrl('file:///' + os.path.join(utils.scriptdir)))
+        self.help.setHtml(html, QUrl("file:///" + os.path.join(utils.scriptdir)))
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.help)
 
@@ -352,45 +375,60 @@ class DialogRegister(QDialog):
     def __init__(self, parent, **kwargs):
         super(DialogRegister, self).__init__(parent, **kwargs)
 
-        self.setWindowTitle('Register NMRbrew')
+        self.setWindowTitle("Register NMRbrew")
 
         self.layout = QVBoxLayout()
-        self.layout.addWidget(QLabel('Please register NMRbrew by entering your details below.\n\nThis is completely optional but helps it helps us find out\nhow NMRbrew is being used.'))
+        self.layout.addWidget(
+            QLabel(
+                "Please register NMRbrew by entering your details below.\n\nThis is completely optional but helps it helps us find out\nhow NMRbrew is being used."
+            )
+        )
 
         self.layout.addSpacerItem(QSpacerItem(0, 20))
 
         bx = QGridLayout()
 
         self.name = QLineEdit()
-        bx.addWidget(QLabel('Name'), 0, 0)
+        bx.addWidget(QLabel("Name"), 0, 0)
         bx.addWidget(self.name, 0, 1)
 
         self.institution = QLineEdit()
-        bx.addWidget(QLabel('Institution/Organisation'), 1, 0)
+        bx.addWidget(QLabel("Institution/Organisation"), 1, 0)
         bx.addWidget(self.institution, 1, 1)
 
         self.type = QComboBox()
-        self.type.addItems(['Academic', 'Governmental', 'Commercial', 'Non-profit', 'Personal', 'Other'])
-        bx.addWidget(QLabel('Type of organisation'), 2, 0)
+        self.type.addItems(
+            [
+                "Academic",
+                "Governmental",
+                "Commercial",
+                "Non-profit",
+                "Personal",
+                "Other",
+            ]
+        )
+        bx.addWidget(QLabel("Type of organisation"), 2, 0)
         bx.addWidget(self.type, 2, 1)
 
         self.country = QLineEdit()
-        bx.addWidget(QLabel('Country'), 3, 0)
+        bx.addWidget(QLabel("Country"), 3, 0)
         bx.addWidget(self.country, 3, 1)
 
         self.research = QLineEdit()
-        bx.addWidget(QLabel('Research interest'), 4, 0)
+        bx.addWidget(QLabel("Research interest"), 4, 0)
         bx.addWidget(self.research, 4, 1)
 
         self.email = QLineEdit()
-        bx.addWidget(QLabel('Email address'), 5, 0)
+        bx.addWidget(QLabel("Email address"), 5, 0)
         bx.addWidget(self.email, 5, 1)
 
         bx.addItem(QSpacerItem(0, 20), 6, 0)
 
         self.releases = QComboBox()
-        self.releases.addItems(['Check automatically (weekly)', 'Subscribe to mailing list', 'Don\'t check'])
-        bx.addWidget(QLabel('Software updates'), 7, 0)
+        self.releases.addItems(
+            ["Check automatically (weekly)", "Subscribe to mailing list", "Don't check"]
+        )
+        bx.addWidget(QLabel("Software updates"), 7, 0)
         bx.addWidget(self.releases, 7, 1)
 
         self.layout.addLayout(bx)
@@ -421,79 +459,89 @@ class ExportImageDialog(GenericDialog):
     :type show_rerender_options: bool
 
     """
+
     print_u = {  # Qt uses pixels/meter as it's default resolution so measure relative to meters
-        'in': 39.3701,
-        'mm': 1000,
-        'cm': 100,
-        'm': 1,
-        }
+        "in": 39.3701,
+        "mm": 1000,
+        "cm": 100,
+        "m": 1,
+    }
 
     print_p = {  # Spinbox parameters dp, increment
-        'in': (3, 1, 0.01, 1000),
-        'mm': (2, 1, 0.1, 100000),
-        'cm': (3, 1, 0.01, 10000),
-        'm': (5, 1, 0.0001, 100),
+        "in": (3, 1, 0.01, 1000),
+        "mm": (2, 1, 0.1, 100000),
+        "cm": (3, 1, 0.01, 10000),
+        "m": (5, 1, 0.0001, 100),
     }
 
     resolution_u = {  # Qt uses pixels/meter as it's default resolution so scale to that
-                    'dpi': 39.3701,
-                    'px/mm': 1000,
-                    'px/cm': 100,
-                    'px/m': 1,
-                    }
+        "dpi": 39.3701,
+        "px/mm": 1000,
+        "px/cm": 100,
+        "px/m": 1,
+    }
 
-    convert_res_to_unit = {'dpi': 'in', 'px/mm': 'mm', 'px/cm': 'cm', 'px/m': 'm'}
+    convert_res_to_unit = {"dpi": "in", "px/mm": "mm", "px/cm": "cm", "px/m": "m"}
 
-    def __init__(self, parent, size=QSize(800, 600), dpm=11811, show_rerender_options=False, **kwargs):
+    def __init__(
+        self,
+        parent,
+        size=QSize(800, 600),
+        dpm=11811,
+        show_rerender_options=False,
+        **kwargs,
+    ):
         super(ExportImageDialog, self).__init__(parent, **kwargs)
 
         self.setWindowTitle(tr("Export Image"))
 
-        # Handle measurements internally as pixels, convert to/from
+        # Handle measurements internally as pixels, convert to/from
         self._w = size.width()
         self._h = size.height()
-        self.default_print_units = 'cm'
-        self.default_resolution_units = 'dpi'
+        self.default_print_units = "cm"
+        self.default_resolution_units = "dpi"
 
         self._updating = False
 
         r = 0
         w = QGridLayout()
 
-        w.addWidget(QLabel('<b>Image Size</b>'), r, 0)
+        w.addWidget(QLabel("<b>Image Size</b>"), r, 0)
         r += 1
 
         self.width = QSpinBox()
         self.width.setRange(1, 100000)
-        w.addWidget(QLabel('Width'), r, 0)
+        w.addWidget(QLabel("Width"), r, 0)
         w.addWidget(self.width, r, 1)
         r += 1
 
         self.height = QSpinBox()
         self.height.setRange(1, 100000)
-        w.addWidget(QLabel('Height'), r, 0)
+        w.addWidget(QLabel("Height"), r, 0)
         w.addWidget(self.height, r, 1)
         r += 1
         w.addItem(QSpacerItem(1, 10), r, 0)
         r += 1
 
-        w.addWidget(QLabel('<b>Print Size</b>'), r, 0)
+        w.addWidget(QLabel("<b>Print Size</b>"), r, 0)
         r += 1
 
         self.width_p = QDoubleSpinBox()
         self.width_p.setRange(0.0001, 10000)
-        w.addWidget(QLabel('Width'), r, 0)
+        w.addWidget(QLabel("Width"), r, 0)
         w.addWidget(self.width_p, r, 1)
         r += 1
 
         self.height_p = QDoubleSpinBox()
         self.height_p.setRange(0.0001, 10000)
-        w.addWidget(QLabel('Height'), r, 0)
+        w.addWidget(QLabel("Height"), r, 0)
         w.addWidget(self.height_p, r, 1)
 
         self.print_units = QComboBox()
         self.print_units.addItems(list(self.print_u.keys()))
-        self.print_units.setCurrentIndex(self.print_units.findText(self.default_print_units))
+        self.print_units.setCurrentIndex(
+            self.print_units.findText(self.default_print_units)
+        )
 
         w.addWidget(self.print_units, r, 2)
         r += 1
@@ -505,9 +553,11 @@ class ExportImageDialog(GenericDialog):
 
         self.resolution_units = QComboBox()
         self.resolution_units.addItems(list(self.resolution_u.keys()))
-        self.resolution_units.setCurrentIndex(self.resolution_units.findText(self.default_resolution_units))
+        self.resolution_units.setCurrentIndex(
+            self.resolution_units.findText(self.default_resolution_units)
+        )
 
-        w.addWidget(QLabel('Resolution'), r, 0)
+        w.addWidget(QLabel("Resolution"), r, 0)
         w.addWidget(self.resolution, r, 1)
         w.addWidget(self.resolution_units, r, 2)
         r += 1
@@ -515,12 +565,12 @@ class ExportImageDialog(GenericDialog):
         r += 1
 
         if show_rerender_options:
-            w.addWidget(QLabel('<b>Scaling</b>'), r, 0)
+            w.addWidget(QLabel("<b>Scaling</b>"), r, 0)
             r += 1
             self.scaling = QComboBox()
-            self.scaling.addItems(['Resample', 'Resize'])
-            self.scaling.setCurrentIndex(self.scaling.findText('Resample'))
-            w.addWidget(QLabel('Scaling method'), r, 0)
+            self.scaling.addItems(["Resample", "Resize"])
+            self.scaling.setCurrentIndex(self.scaling.findText("Resample"))
+            w.addWidget(QLabel("Scaling method"), r, 0)
             w.addWidget(self.scaling, r, 1)
             r += 1
             w.addItem(QSpacerItem(1, 20), r, 0)
@@ -587,14 +637,26 @@ class ExportImageDialog(GenericDialog):
 
         if dimension_t != self._current_dimension:
             # We've had a change, so convert
-            self.width_p.setValue(self.get_converted_measurement(self.width_p.value(), self._current_dimension, dimension_t))
-            self.height_p.setValue(self.get_converted_measurement(self.height_p.value(), self._current_dimension, dimension_t))
+            self.width_p.setValue(
+                self.get_converted_measurement(
+                    self.width_p.value(), self._current_dimension, dimension_t
+                )
+            )
+            self.height_p.setValue(
+                self.get_converted_measurement(
+                    self.height_p.value(), self._current_dimension, dimension_t
+                )
+            )
 
         self._current_dimension = dimension_t
 
     def changed_resolution_units(self):
         ru = self.resolution_units.currentText()
-        self.resolution.setValue(self.resolution.value() * self.resolution_u[self._current_resolution_units] / float(self.resolution_u[ru]))
+        self.resolution.setValue(
+            self.resolution.value()
+            * self.resolution_u[self._current_resolution_units]
+            / float(self.resolution_u[ru])
+        )
         self._current_resolution_units = ru
 
     # Update print dimensions using the image dimensions and resolutions
@@ -613,13 +675,10 @@ class ExportImageDialog(GenericDialog):
         ps = self.resolution.value()
         ps_u = self.resolution_units.currentText()
         s = s / (ps * self.resolution_u[ps_u])  # Get size in metres
-        return self.get_converted_measurement(s, 'm', u)  # Return converted value
+        return self.get_converted_measurement(s, "m", u)  # Return converted value
 
     def get_print_size(self, u):
-        return (
-            self.get_as_print_size(self._w, u),
-            self.get_as_print_size(self._h, u)
-            )
+        return (self.get_as_print_size(self._w, u), self.get_as_print_size(self._h, u))
 
     # Update image dimensions using the print dimensions and resolutions
     def update_image_dimensions(self):
@@ -651,53 +710,58 @@ class ExportImageDialog(GenericDialog):
         return QSize(self._w, self._h)
 
     def get_dots_per_meter(self):
-        return self.resolution.value() * self.resolution_u[self.resolution_units.currentText()]
+        return (
+            self.resolution.value()
+            * self.resolution_u[self.resolution_units.currentText()]
+        )
 
     def get_dots_per_inch(self):
-        if self.resolution_units.currentText() == 'in':
+        if self.resolution_units.currentText() == "in":
             return self.resolution.value()
         else:
-            return self.get_converted_measurement(self.resolution.value(), self.convert_res_to_unit[self.resolution_units.currentText()], 'in')
+            return self.get_converted_measurement(
+                self.resolution.value(),
+                self.convert_res_to_unit[self.resolution_units.currentText()],
+                "in",
+            )
 
     def get_resample(self):
         if self.scaling:
-            return self.scaling.currentText() == 'Resample'
+            return self.scaling.currentText() == "Resample"
         else:
             return False
 
 
 class ToolListDelegate(QAbstractItemDelegate):
-
     def paint(self, painter, option, index):
         r = option.rect
 
-
-        #item.setData(Qt.DisplayRole, "%s" % job.name)
-        #item.setData(Qt.UserRole, "%d/%d complete; %d error(s)" % (e_complete, e_total, e_errored))
-        #item.setData(Qt.UserRole + 3, job.status)
-        #item.setData(Qt.UserRole + 2, float(e_complete)/float(e_total))
+        # item.setData(Qt.DisplayRole, "%s" % job.name)
+        # item.setData(Qt.UserRole, "%d/%d complete; %d error(s)" % (e_complete, e_total, e_errored))
+        # item.setData(Qt.UserRole + 3, job.status)
+        # item.setData(Qt.UserRole + 2, float(e_complete)/float(e_total))
 
         # GET TITLE, DESCRIPTION
         title = index.data(Qt.DisplayRole)  # .toString()
         icon = index.data(Qt.DecorationRole)
         tool = index.data(Qt.UserRole)  # .toString()
-        description = index.data(Qt.UserRole+1)  # .toString()
+        description = index.data(Qt.UserRole + 1)  # .toString()
 
-        progress = index.data(Qt.UserRole+2)
-        status = index.data(Qt.UserRole+3)
+        progress = index.data(Qt.UserRole + 2)
+        status = index.data(Qt.UserRole + 3)
 
         text_color = QPalette().text().color()
 
         c = STATUS_QCOLORS[status]
         if option.state & QStyle.State_Selected:
             painter.setPen(QPalette().highlightedText().color())
-            if status == 'ready':
+            if status == "ready":
                 c = QPalette().highlight().color()
             else:
                 c.setAlpha(60)
 
         else:
-            if status == 'inactive':
+            if status == "inactive":
                 text_color.setAlpha(100)
 
             c.setAlpha(30)
@@ -726,12 +790,16 @@ class ToolListDelegate(QAbstractItemDelegate):
 
         # DESCRIPTION
         r = option.rect.adjusted(40, 18, 0, 0)
-        painter.drawText(r.left(), r.top(), r.width(), r.height(), Qt.AlignLeft, description)
+        painter.drawText(
+            r.left(), r.top(), r.width(), r.height(), Qt.AlignLeft, description
+        )
 
         painter.setRenderHint(QPainter.Antialiasing)
 
-        status_r = QRectF(215, option.rect.y() + (option.rect.height()/2)-12.5, 25, 25)
-        if tool.current_status == 'active':
+        status_r = QRectF(
+            215, option.rect.y() + (option.rect.height() / 2) - 12.5, 25, 25
+        )
+        if tool.current_status == "active":
             pen = QPen()
             c = STATUS_QCOLORS[status]
             c.setAlpha(100)
@@ -740,19 +808,16 @@ class ToolListDelegate(QAbstractItemDelegate):
 
             painter.setPen(pen)
 
-            painter.drawArc(status_r, 1440, -(5760 * tool.current_progress ) )
+            painter.drawArc(status_r, 1440, -(5760 * tool.current_progress))
 
         else:
             pass
-
-
 
     def sizeHint(self, option, index):
         return QSize(200, 40)
 
 
 class ToolListWidget(QListWidget):
-
     def __init__(self, parent=None, **kwargs):
         super(ToolListWidget, self).__init__(parent, **kwargs)
 
@@ -768,25 +833,23 @@ class ToolListWidget(QListWidget):
         item = self.itemAt(pos)
 
         cx = QMenu("Context menu")
-        if item.tool.current_status == 'inactive':
-            act = QAction('Activate', self)
+        if item.tool.current_status == "inactive":
+            act = QAction("Activate", self)
             act.triggered.connect(item.tool.activate)
             cx.addAction(act)
         else:
-            act = QAction('Disable', self)
+            act = QAction("Disable", self)
             act.triggered.connect(item.tool.disable)
             cx.addAction(act)
 
         cx.exec_(self.mapToGlobal(pos))
 
 
-
 class AnnotateClasses(GenericDialog):
-
     def __init__(self, parent, config=None, *args, **kwargs):
         super(AnnotateClasses, self).__init__(parent, *args, **kwargs)
 
-        self.setWindowTitle('Annotate Classes')
+        self.setWindowTitle("Annotate Classes")
 
         if config:
             # Copy in starting state
@@ -798,7 +861,7 @@ class AnnotateClasses(GenericDialog):
         self.fwd_map_cache = {}
 
         # Correlation variables
-        gb = QGroupBox('Sample classes')
+        gb = QGroupBox("Sample classes")
         vbox = QVBoxLayout()
         # Populate the list boxes
         self.lw_classes = QListWidgetAddRemove()
@@ -810,14 +873,16 @@ class AnnotateClasses(GenericDialog):
         self.add_label = QLineEdit()
         self.add_class = QLineEdit()
 
-        addc = QPushButton('Add')
+        addc = QPushButton("Add")
         addc.clicked.connect(self.onClassAdd)
 
-        remc = QPushButton('Remove selected')
+        remc = QPushButton("Remove selected")
         remc.clicked.connect(self.onClassAdd)
 
-        loadc = QPushButton('Import from file')
-        loadc.setIcon(QIcon(os.path.join(utils.scriptdir, 'icons', 'folder-open-document.png')))
+        loadc = QPushButton("Import from file")
+        loadc.setIcon(
+            QIcon(os.path.join(utils.scriptdir, "icons", "folder-open-document.png"))
+        )
         loadc.clicked.connect(self.onClassImport)
 
         vboxh.addWidget(self.add_label)
@@ -832,52 +897,61 @@ class AnnotateClasses(GenericDialog):
 
         self.layout.addWidget(gb)
 
-        self.config.add_handler('annotation/sample_classes', self.lw_classes, (self.map_list_fwd, self.map_list_rev))
+        self.config.add_handler(
+            "annotation/sample_classes",
+            self.lw_classes,
+            (self.map_list_fwd, self.map_list_rev),
+        )
 
         self.dialogFinalise()
 
     def onClassAdd(self):
-        c = self.config.get('annotation/sample_classes')[:]  # Create new list to force refresh on reassign
-        c.append( (self.add_label.text(), self.add_class.text()) )
-        self.config.set('annotation/sample_classes', c)
+        c = self.config.get("annotation/sample_classes")[
+            :
+        ]  # Create new list to force refresh on reassign
+        c.append((self.add_label.text(), self.add_class.text()))
+        self.config.set("annotation/sample_classes", c)
 
     def onClassRemove(self):
         i = self.lw_classes.removeItemAt(self.lw_classes.currentRow())
         # c = self.map_list_fwd(i.text())
 
     def onClassImport(self):
-        filename, _ = QFileDialog.getOpenFileName(self.parent(), 'Load classifications from file', '', "All compatible files (*.csv *.txt *.tsv);;Comma Separated Values (*.csv);;Plain Text Files (*.txt);;Tab Separated Values (*.tsv);;All files (*.*)")
+        filename, _ = QFileDialog.getOpenFileName(
+            self.parent(),
+            "Load classifications from file",
+            "",
+            "All compatible files (*.csv *.txt *.tsv);;Comma Separated Values (*.csv);;Plain Text Files (*.txt);;Tab Separated Values (*.tsv);;All files (*.*)",
+        )
         if filename:
-            c = self.config.get('annotation/sample_classes')[:]  # Create new list to force refresh on reassign
+            c = self.config.get("annotation/sample_classes")[
+                :
+            ]  # Create new list to force refresh on reassign
 
-            with open(filename, 'rU') as f:
-                reader = csv.reader(f, delimiter=b',', dialect='excel')
+            with open(filename, "rU") as f:
+                reader = csv.reader(f, delimiter=b",", dialect="excel")
                 for row in reader:
                     if row not in c:
                         c.append(row[:2])
 
-            self.config.set('annotation/sample_classes', c)
+            self.config.set("annotation/sample_classes", c)
 
     def map_list_fwd(self, s):
-        " Receive text name, return the indexes "
+        "Receive text name, return the indexes"
         return self.fwd_map_cache[s]
 
     def map_list_rev(self, x):
-        " Receive the indexes, return the label"
+        "Receive the indexes, return the label"
         s = "%s\t%s" % tuple(x)
         self.fwd_map_cache[s] = x
         return s
 
 
-
-
-
 class AnnotatePeaks(GenericDialog):
-
     def __init__(self, parent, config=None, *args, **kwargs):
         super(AnnotatePeaks, self).__init__(parent, *args, **kwargs)
 
-        self.setWindowTitle('Annotate Peaks')
+        self.setWindowTitle("Annotate Peaks")
 
         if config:
             # Copy in starting state
@@ -889,7 +963,7 @@ class AnnotatePeaks(GenericDialog):
         self.fwd_map_cache = {}
 
         # Correlation variables
-        gb = QGroupBox('Peaks')
+        gb = QGroupBox("Peaks")
         vbox = QVBoxLayout()
         # Populate the list boxes
         self.lw_peaks = QListWidgetAddRemove()
@@ -902,28 +976,31 @@ class AnnotatePeaks(GenericDialog):
         self.add_start = QDoubleSpinBox()
         self.add_start.setRange(-1, 12)
         self.add_start.setDecimals(3)
-        self.add_start.setSuffix('ppm')
+        self.add_start.setSuffix("ppm")
         self.add_start.setSingleStep(0.001)
 
         self.add_end = QDoubleSpinBox()
         self.add_end.setRange(-1, 12)
         self.add_end.setDecimals(3)
-        self.add_end.setSuffix('ppm')
+        self.add_end.setSuffix("ppm")
         self.add_end.setSingleStep(0.001)
 
-        addc = QPushButton('Add')
+        addc = QPushButton("Add")
         addc.clicked.connect(self.onPeakAdd)
 
-        remc = QPushButton('Remove selected')
+        remc = QPushButton("Remove selected")
         remc.clicked.connect(self.onPeakAdd)
 
         loadc = QPushButton("Import from file")
-        loadc.setIcon(QIcon(os.path.join(utils.scriptdir, 'icons', 'folder-open-document.png')))
+        loadc.setIcon(
+            QIcon(os.path.join(utils.scriptdir, "icons", "folder-open-document.png"))
+        )
         loadc.clicked.connect(self.onPeakImport)
 
-
         metabh = QPushButton("Auto match via MetaboHunter")
-        metabh.setIcon(QIcon(os.path.join(utils.scriptdir, 'icons', 'metabohunter.png')))
+        metabh.setIcon(
+            QIcon(os.path.join(utils.scriptdir, "icons", "metabohunter.png"))
+        )
         metabh.clicked.connect(self.onPeakImportMetabohunter)
 
         vboxh.addWidget(self.add_label)
@@ -941,42 +1018,60 @@ class AnnotatePeaks(GenericDialog):
 
         self.layout.addWidget(gb)
 
-        self.config.add_handler('annotation/peaks', self.lw_peaks, (self.map_list_fwd, self.map_list_rev))
+        self.config.add_handler(
+            "annotation/peaks", self.lw_peaks, (self.map_list_fwd, self.map_list_rev)
+        )
 
         self.dialogFinalise()
 
     def onPeakAdd(self):
-        c = self.config.get('annotation/peaks')[:]  # Create new list to force refresh on reassign
-        c.append( (self.add_label.text(), float(self.add_start.value()), float(self.add_end.value()) ) )
-        self.config.set('annotation/peaks', c)
+        c = self.config.get("annotation/peaks")[
+            :
+        ]  # Create new list to force refresh on reassign
+        c.append(
+            (
+                self.add_label.text(),
+                float(self.add_start.value()),
+                float(self.add_end.value()),
+            )
+        )
+        self.config.set("annotation/peaks", c)
 
     def onPeakRemove(self):
         i = self.lw_peaks.removeItemAt(self.lw_peaks.currentRow())
         # c = self.map_list_fwd(i.text())
 
     def onPeakImport(self):
-        filename, _ = QFileDialog.getOpenFileName(self.parent(), 'Load peak annotations from file', '', "All compatible files (*.csv *.txt *.tsv);;Comma Separated Values (*.csv);;Plain Text Files (*.txt);;Tab Separated Values (*.tsv);;All files (*.*)")
+        filename, _ = QFileDialog.getOpenFileName(
+            self.parent(),
+            "Load peak annotations from file",
+            "",
+            "All compatible files (*.csv *.txt *.tsv);;Comma Separated Values (*.csv);;Plain Text Files (*.txt);;Tab Separated Values (*.tsv);;All files (*.*)",
+        )
         if filename:
-            c = self.config.get('annotation/peaks')[:]  # Create new list to force refresh on reassign
+            c = self.config.get("annotation/peaks")[
+                :
+            ]  # Create new list to force refresh on reassign
 
-            with open(filename, 'rU') as f:
-                reader = csv.reader(f, delimiter=b',', dialect='excel')
+            with open(filename, "rU") as f:
+                reader = csv.reader(f, delimiter=b",", dialect="excel")
                 for row in reader:
                     if row not in c:
-                        c.append( row[0], float(row[1]), float(row[2]) )
+                        c.append(row[0], float(row[1]), float(row[2]))
 
-            self.config.set('annotation/peaks', c)
+            self.config.set("annotation/peaks", c)
 
     def onPeakImportMetabohunter(self):
-        c = self.config.get('annotation/peaks')[:]  # Create new list to force refresh on reassign
+        c = self.config.get("annotation/peaks")[
+            :
+        ]  # Create new list to force refresh on reassign
         t = self.parent().current_tool
 
         dlg = MetaboHunter(self)
         if dlg.exec_():
-
-            if 'spc' in t.data:
+            if "spc" in t.data:
                 # We have a spectra; calcuate mean; reduce size if required
-                spc = t.data['spc']
+                spc = t.data["spc"]
                 n = spc.data.shape[1]
                 ppm = spc.ppm
                 spcd = np.mean(spc.data, axis=0)
@@ -984,26 +1079,28 @@ class AnnotatePeaks(GenericDialog):
                 # Set a hard limit on the size of data we submit to be nice.
                 if n > 3000:
                     # Calculate the division required to be under the limit
-                    d = np.ceil(float(n)/3000)
+                    d = np.ceil(float(n) / 3000)
                     # Trim axis to multiple of divisor
-                    trim = (n//d)*d
+                    trim = (n // d) * d
                     spcd = spcd[:trim]
                     ppm = ppm[:trim]
                     # Mean d shape
-                    spcd = np.mean( spcd.reshape(-1,d), axis=1)
-                    ppm = np.mean( ppm.reshape(-1,d), axis=1)
+                    spcd = np.mean(spcd.reshape(-1, d), axis=1)
+                    ppm = np.mean(ppm.reshape(-1, d), axis=1)
 
             # Submit with settings
-            hmdbs = metabohunter.request(ppm, spcd,
-                  metabotype=dlg.config.get('Metabotype'),
-                  database=dlg.config.get('Database Source'),
-                  ph=dlg.config.get('Sample pH'),
-                  solvent=dlg.config.get('Solvent'),
-                  frequency=dlg.config.get('Frequency'),
-                  method=dlg.config.get('Method'),
-                  noise=dlg.config.get('Noise Threshold'),
-                  confidence=dlg.config.get('Confidence Threshold'),
-                  tolerance=dlg.config.get('Tolerance')
+            hmdbs = metabohunter.request(
+                ppm,
+                spcd,
+                metabotype=dlg.config.get("Metabotype"),
+                database=dlg.config.get("Database Source"),
+                ph=dlg.config.get("Sample pH"),
+                solvent=dlg.config.get("Solvent"),
+                frequency=dlg.config.get("Frequency"),
+                method=dlg.config.get("Method"),
+                noise=dlg.config.get("Noise Threshold"),
+                confidence=dlg.config.get("Confidence Threshold"),
+                tolerance=dlg.config.get("Tolerance"),
             )
 
             ha = np.array(hmdbs)
@@ -1023,39 +1120,40 @@ class AnnotatePeaks(GenericDialog):
                     hb[-1] == True
 
                 idx = np.nonzero(hb)[0]
-                idx = idx.reshape(-1,2)
+                idx = idx.reshape(-1, 2)
 
-                if dlg.config.get('convert_hmdb_ids_to_names') and hmdb in METABOHUNTER_HMDB_NAME_MAP.keys():
+                if (
+                    dlg.config.get("convert_hmdb_ids_to_names")
+                    and hmdb in METABOHUNTER_HMDB_NAME_MAP.keys()
+                ):
                     label = METABOHUNTER_HMDB_NAME_MAP[hmdb]
                 else:
                     label = hmdb
 
                 # Now we have an array of all start, stop positions for this item
                 for start, stop in idx:
-                    c.append( (label, ppm[start], ppm[stop]) )
+                    c.append((label, ppm[start], ppm[stop]))
 
-
-        self.config.set('annotation/peaks', c)
+        self.config.set("annotation/peaks", c)
 
     def map_list_fwd(self, s):
-        " Receive text name, return the indexes "
+        "Receive text name, return the indexes"
         return self.fwd_map_cache[s]
 
     def map_list_rev(self, x):
-        " Receive the indexes, return the label"
+        "Receive the indexes, return the label"
         s = "%s\t%.2f\t%.2f" % tuple(x)
         self.fwd_map_cache[s] = x
         return s
 
 
-
 class Preferences(GenericDialog):
-    '''
+    """
     Application preferences dialog. This is passed a set of options and these are duplicated-stored internally.
     If the preferences dialog is exited with OK, these changes are copied and applied back to the
     global settings object. If exited with Cancel they are discarded.
 
-    '''
+    """
 
     def __init__(self, parent, config=None, *args, **kwargs):
         super(Preferences, self).__init__(parent, *args, **kwargs)
@@ -1066,84 +1164,88 @@ class Preferences(GenericDialog):
             self.config.hooks.update(custom_pyqtconfig_hooks.items())
             self.config.set_defaults(config)
 
-
         self.dialogFinalise()
-
-
-
 
 
 # Dialog box for Metabohunter search options
 class MetaboHunter(GenericDialog):
-
     options = {
-    'Metabotype': {
-        'All': 'All',
-        'Drug': 'Drug',
-        'Food additive': 'Food additive',
-        'Mammalian': 'Mammalian',
-        'Microbial': 'Microbial',
-        'Plant': 'Plant',
-        'Synthetic/Industrial chemical': 'Synthetic/Industrial chemical',
+        "Metabotype": {
+            "All": "All",
+            "Drug": "Drug",
+            "Food additive": "Food additive",
+            "Mammalian": "Mammalian",
+            "Microbial": "Microbial",
+            "Plant": "Plant",
+            "Synthetic/Industrial chemical": "Synthetic/Industrial chemical",
         },
-    'Database Source': {
-        'Human Metabolome Database (HMDB)': 'HMDB',
-        'Madison Metabolomics Consortium Database (MMCD)': 'MMCD',
+        "Database Source": {
+            "Human Metabolome Database (HMDB)": "HMDB",
+            "Madison Metabolomics Consortium Database (MMCD)": "MMCD",
         },
-    'Sample pH': {
-        '10.00 - 10.99': 'ph7',
-        '7.00 - 9.99': 'ph7',
-        '6.00 - 6.99': 'ph6',
-        '5.00 - 5.99': 'ph5',
-        '4.00 - 4.99': 'ph4',
-        '3.00 - 3.99': 'ph3',
-    },
-    'Solvent': {
-        'All': 'all',
-        'Water': 'water',
-        'CDCl3': 'cdcl3',
-        'CD3OD': '5d3od',
-        '5% DMSO': '5dmso',
-    },
-    'Frequency': {
-        'All': 'all',
-        '600 MHz': '600',
-        '500 MHz': '500',
-        '400 MHz': '400',
-    },
-    'Method': {
-        'MH1: Highest number of matched peaks': 'HighestNumber',
-        'MH2: Highest number of matched peaks with shift tolerance': 'HighestNumberNeighbourhood',
-        'MH3: Greedy selection of metabolites with disjoint peaks': 'Greedy2',
-        'MH4: Highest number of matched peaks with intensities': 'HighestNumberHeights',
-        'MH5: Greedy selection of metabolites with disjoint peaks and heights': 'Greedy2Heights',
-    },
+        "Sample pH": {
+            "10.00 - 10.99": "ph7",
+            "7.00 - 9.99": "ph7",
+            "6.00 - 6.99": "ph6",
+            "5.00 - 5.99": "ph5",
+            "4.00 - 4.99": "ph4",
+            "3.00 - 3.99": "ph3",
+        },
+        "Solvent": {
+            "All": "all",
+            "Water": "water",
+            "CDCl3": "cdcl3",
+            "CD3OD": "5d3od",
+            "5% DMSO": "5dmso",
+        },
+        "Frequency": {
+            "All": "all",
+            "600 MHz": "600",
+            "500 MHz": "500",
+            "400 MHz": "400",
+        },
+        "Method": {
+            "MH1: Highest number of matched peaks": "HighestNumber",
+            "MH2: Highest number of matched peaks with shift tolerance": "HighestNumberNeighbourhood",
+            "MH3: Greedy selection of metabolites with disjoint peaks": "Greedy2",
+            "MH4: Highest number of matched peaks with intensities": "HighestNumberHeights",
+            "MH5: Greedy selection of metabolites with disjoint peaks and heights": "Greedy2Heights",
+        },
     }
 
     def __init__(self, *args, **kwargs):
         super(MetaboHunter, self).__init__(*args, **kwargs)
 
-        self.setWindowTitle('MetaboHunter')
+        self.setWindowTitle("MetaboHunter")
         # Copy in starting state
         self.config = ConfigManager()
         self.config.hooks.update(custom_pyqtconfig_hooks.items())
 
-        self.config.set_defaults({
-            'Metabotype': 'All',
-            'Database Source': 'HMDB',
-            'Sample pH': 'ph7',
-            'Solvent': 'water',
-            'Frequency': 'all',
-            'Method': 'HighestNumberNeighbourhood',
-            'Noise Threshold': 0.0001,
-            'Confidence Threshold': 0.5,
-            'Tolerance': 0.1,
-            'convert_hmdb_ids_to_names': True,
-        })
+        self.config.set_defaults(
+            {
+                "Metabotype": "All",
+                "Database Source": "HMDB",
+                "Sample pH": "ph7",
+                "Solvent": "water",
+                "Frequency": "all",
+                "Method": "HighestNumberNeighbourhood",
+                "Noise Threshold": 0.0001,
+                "Confidence Threshold": 0.5,
+                "Tolerance": 0.1,
+                "convert_hmdb_ids_to_names": True,
+            }
+        )
 
         self.lw_combos = {}
 
-        for o in ['Metabotype', 'Database Source', 'Sample pH', 'Solvent', 'Frequency', 'Method']:
+        for o in [
+            "Metabotype",
+            "Database Source",
+            "Sample pH",
+            "Solvent",
+            "Frequency",
+            "Method",
+        ]:
             row = QVBoxLayout()
             cl = QLabel(o)
             cb = QComboBox()
@@ -1157,7 +1259,7 @@ class MetaboHunter(GenericDialog):
 
         row = QGridLayout()
         self.lw_spin = {}
-        for n, o in enumerate(['Noise Threshold', 'Confidence Threshold', 'Tolerance']):
+        for n, o in enumerate(["Noise Threshold", "Confidence Threshold", "Tolerance"]):
             cl = QLabel(o)
             cb = QDoubleSpinBox()
             cb.setDecimals(4)
@@ -1174,10 +1276,9 @@ class MetaboHunter(GenericDialog):
         row = QHBoxLayout()
         row.addWidget(QLabel("Convert HMDB IDs to chemical names?"))
         conv = QCheckBox()
-        self.config.add_handler('convert_hmdb_ids_to_names', conv)
+        self.config.add_handler("convert_hmdb_ids_to_names", conv)
         row.addWidget(conv)
 
         self.layout.addLayout(row)
 
         self.dialogFinalise()
-
